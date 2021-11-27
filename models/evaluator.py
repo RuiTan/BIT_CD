@@ -7,6 +7,7 @@ from misc.metric_tool import ConfuseMatrixMeter
 from misc.logger_tool import Logger
 from utils import de_norm
 import utils
+import cv2
 
 
 # Decide which device we want to run on
@@ -112,17 +113,27 @@ class CDEvaluator():
             self.logger.write(message)
 
         if np.mod(self.batch_id, 100) == 1:
-            vis_input = utils.make_numpy_grid(de_norm(self.batch['A']))
-            vis_input2 = utils.make_numpy_grid(de_norm(self.batch['B']))
-
-            vis_pred = utils.make_numpy_grid(self._visualize_pred())
-
-            vis_gt = utils.make_numpy_grid(self.batch['L'])
-            vis = np.concatenate([vis_input, vis_input2, vis_pred, vis_gt], axis=0)
-            vis = np.clip(vis, a_min=0.0, a_max=1.0)
+            vis_input_A = de_norm(self.batch['A']).cpu().detach().numpy()*255
+            vis_input_B = de_norm(self.batch['B']).cpu().detach().numpy()*255
+            vis_pred = self._visualize_pred().cpu().detach().numpy()
+            vis_gt = self.batch['L'].cpu().detach().numpy()*255
+            results = None
+            for i in range(vis_input_A.shape[0]):
+                A, B, p, g = vis_input_A[i], vis_input_B[i], vis_pred[i], vis_gt[i]
+                p = np.squeeze(p)
+                p = np.stack([p,p,p], axis=0)
+                g = np.squeeze(g)
+                g = np.stack([g, g, g], axis=0)
+                fusion = np.concatenate([A,B,g,p], axis=-1)
+                if results is None:
+                    results = fusion
+                else:
+                    results = np.concatenate([results, fusion], axis=-2)
+            vis = results.transpose((1,2,0))
+            vis = vis.astype(np.uint8)
             file_name = os.path.join(
                 self.vis_dir, 'eval_' + str(self.batch_id)+'.jpg')
-            plt.imsave(file_name, vis)
+            cv2.imwrite(file_name, vis)
 
 
     def _collect_epoch_states(self):

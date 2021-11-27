@@ -14,8 +14,8 @@ def main():
     # args
     # ------------
     parser = ArgumentParser()
-    parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
-    parser.add_argument('--project_name', default='test', type=str)
+    parser.add_argument('--gpu_ids', type=str, default='0,1', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
+    parser.add_argument('--project_name', default='11_23_1', type=str)
     parser.add_argument('--print_models', default=False, type=bool, help='print models')
 
     # data
@@ -23,7 +23,7 @@ def main():
     parser.add_argument('--dataset', default='CDDataset', type=str)
     parser.add_argument('--data_name', default='LEVIR', type=str)
 
-    parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--split', default="test", type=str)
 
     parser.add_argument('--img_size', default=256, type=int)

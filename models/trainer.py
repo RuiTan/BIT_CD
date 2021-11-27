@@ -9,7 +9,7 @@ import torch
 import torch.optim as optim
 
 from misc.metric_tool import ConfuseMatrixMeter
-from models.losses import cross_entropy
+from models.losses import cross_entropy, balanced_cross_entropy, focal_loss
 import models.losses as losses
 
 from misc.logger_tool import Logger, Timer
@@ -78,6 +78,10 @@ class CDTrainer():
             self._pxl_loss = cross_entropy
         elif args.loss == 'bce':
             self._pxl_loss = losses.binary_ce
+        elif args.loss == 'bbce':
+            self._pxl_loss = balanced_cross_entropy
+        elif args.loss == 'focal':
+            self._pxl_loss = focal_loss
         else:
             raise NotImplemented(args.loss)
 
@@ -244,7 +248,7 @@ class CDTrainer():
 
     def _backward_G(self):
         gt = self.batch['L'].to(self.device).long()
-        self.G_loss = self._pxl_loss(self.G_pred, gt)
+        self.G_loss = self._pxl_loss(self.G_pred, gt, self.device)
         self.G_loss.backward()
 
 

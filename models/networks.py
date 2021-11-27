@@ -122,19 +122,23 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
 
 def define_G(args, init_type='normal', init_gain=0.02, gpu_ids=[]):
     if args.net_G == 'base_resnet18':
-        net = ResNet(input_nc=3, output_nc=2, output_sigmoid=False)
+        net = ResNet(input_nc=3, output_nc=2, output_sigmoid=args.output_sigmoid)
 
     elif args.net_G == 'base_transformer_pos_s4':
         net = BASE_Transformer(input_nc=3, output_nc=2, token_len=4, resnet_stages_num=4,
-                             with_pos='learned')
+                             with_pos='learned', output_sigmoid=args.output_sigmoid)
 
     elif args.net_G == 'base_transformer_pos_s4_dd8':
         net = BASE_Transformer(input_nc=3, output_nc=2, token_len=4, resnet_stages_num=4,
-                             with_pos='learned', enc_depth=1, dec_depth=8)
+                             with_pos='learned', enc_depth=1, dec_depth=8, output_sigmoid=args.output_sigmoid)
 
     elif args.net_G == 'base_transformer_pos_s4_dd8_dedim8':
         net = BASE_Transformer(input_nc=3, output_nc=2, token_len=4, resnet_stages_num=4,
-                             with_pos='learned', enc_depth=1, dec_depth=8, decoder_dim_head=8)
+                             with_pos='learned', enc_depth=1, dec_depth=8, decoder_dim_head=8, output_sigmoid=args.output_sigmoid)
+
+    elif args.net_G == 'base_transformer_pos_s4_dd8_dedim8_outsigmoid':
+        net = BASE_Transformer(input_nc=3, output_nc=2, token_len=4, resnet_stages_num=4,
+                               with_pos='learned', enc_depth=1, dec_depth=8, decoder_dim_head=8, output_sigmoid=args.output_sigmoid)
 
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % args.net_G)
@@ -242,10 +246,11 @@ class BASE_Transformer(ResNet):
                  pool_mode='max', pool_size=2,
                  backbone='resnet18',
                  decoder_softmax=True, with_decoder_pos=None,
-                 with_decoder=True):
+                 with_decoder=True, output_sigmoid=True):
         super(BASE_Transformer, self).__init__(input_nc, output_nc,backbone=backbone,
                                              resnet_stages_num=resnet_stages_num,
                                                if_upsample_2x=if_upsample_2x,
+                                               output_sigmoid=output_sigmoid
                                                )
         self.token_len = token_len
         self.conv_a = nn.Conv2d(32, self.token_len, kernel_size=1,
@@ -361,7 +366,8 @@ class BASE_Transformer(ResNet):
         # forward small cnn
         x = self.classifier(x)
         if self.output_sigmoid:
-            x = self.sigmoid(x)
+            # x = self.sigmoid(x)
+            x = nn.Softmax(dim=1)(x)
         return x
 
 
